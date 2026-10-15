@@ -38,7 +38,16 @@ sealed interface UnzipUiState {
 sealed interface Extraction {
     data object NotStarted : Extraction
 
-    data object InProgress : Extraction
+    data class InProgress(
+        val entriesWritten: Int,
+        val totalEntries: Int,
+    ) : Extraction {
+        val fraction: Float
+            get() = if (totalEntries > 0) (entriesWritten.toFloat() / totalEntries).coerceAtMost(1f) else 0f
+    }
+
+    /** Stopped by the user; entries finished before that were kept. */
+    data object Cancelled : Extraction
 
     data class Done(
         val summary: ExtractionSummary,
@@ -67,6 +76,7 @@ class UnzipViewModel(
     val uiState: StateFlow<UnzipUiState> = _uiState.asStateFlow()
 
     private var loadJob: Job? = null
+    private var extractJob: Job? = null
 
     fun onArchiveSelected(archiveUri: String) {
         loadJob?.cancel()
@@ -84,16 +94,27 @@ class UnzipViewModel(
 
     fun onDestinationSelected(destinationTreeUri: String) {
         val browsing = _uiState.value as? UnzipUiState.Browsing ?: return
-        if (browsing.extraction == Extraction.InProgress) return
-        setExtraction(browsing.archiveUri, Extraction.InProgress)
-        viewModelScope.launch {
-            val extraction =
-                when (val result = repository.extract(browsing.archiveUri, destinationTreeUri)) {
-                    is ArchiveResult.Success -> Extraction.Done(result.value, destinationTreeUri)
-                    is ArchiveResult.Failure -> Extraction.Failed(result.error)
-                }
-            setExtraction(browsing.archiveUri, extraction)
-        }
+        if (browsing.extraction is Extraction.InProgress) return
+        val archiveUri = browsing.archiveUri
+        val total = browsing.entries.size
+        setExtraction(archiveUri, Extraction.InProgress(0, total))
+        extractJob =
+            viewModelScope.launch {
+                val result = repository.extract(archiveUri, destinationTreeUri) { setProgress(archiveUri, it, total) }
+                val extraction =
+                    when (result) {
+                        is ArchiveResult.Success -> Extraction.Done(result.value, destinationTreeUri)
+                        is ArchiveResult.Failure -> Extraction.Failed(result.error)
+                    }
+                setExtraction(archiveUri, extraction)
+            }
+    }
+
+    fun onCancelExtraction() {
+        val browsing = _uiState.value as? UnzipUiState.Browsing ?: return
+        if (browsing.extraction !is Extraction.InProgress) return
+        extractJob?.cancel()
+        setExtraction(browsing.archiveUri, Extraction.Cancelled)
     }
 
     /** "Open folder" tapped after extracting; the route performs the request. */
@@ -103,6 +124,7 @@ class UnzipViewModel(
     fun onFolderOpenResult(opened: Boolean) =
         setFolderOpening(if (opened) FolderOpening.Idle else FolderOpening.Unavailable)
 
+    /** Leaves any running extraction to finish in the background; only [onCancelExtraction] stops it. */
     fun onCloseArchive() {
         loadJob?.cancel()
         _uiState.value = UnzipUiState.NoArchive
@@ -112,6 +134,24 @@ class UnzipViewModel(
         _uiState.update { state ->
             val done = (state as? UnzipUiState.Browsing)?.extraction as? Extraction.Done ?: return@update state
             state.copy(extraction = done.copy(folderOpening = folderOpening))
+        }
+    }
+
+    /** Called from the extraction thread; ignored once extraction was cancelled or the archive changed. */
+    private fun setProgress(
+        archiveUri: String,
+        entriesWritten: Int,
+        totalEntries: Int,
+    ) {
+        _uiState.update { state ->
+            if (state is UnzipUiState.Browsing &&
+                state.archiveUri == archiveUri &&
+                state.extraction is Extraction.InProgress
+            ) {
+                state.copy(extraction = Extraction.InProgress(entriesWritten, totalEntries))
+            } else {
+                state
+            }
         }
     }
 

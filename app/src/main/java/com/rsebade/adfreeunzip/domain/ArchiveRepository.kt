@@ -6,8 +6,10 @@ interface ArchiveRepository {
 
     suspend fun list(archiveUri: String): ArchiveResult<List<ArchiveEntry>>
 
+    /** Cancellable: cancelling the calling coroutine stops extraction promptly. */
     suspend fun extract(
         archiveUri: String,
         destinationTreeUri: String,
+        onProgress: (entriesWritten: Int) -> Unit,
     ): ArchiveResult<ExtractionSummary>
 }

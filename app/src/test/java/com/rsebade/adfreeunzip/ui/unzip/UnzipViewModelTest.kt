@@ -5,6 +5,7 @@ import com.rsebade.adfreeunzip.domain.ArchiveError
 import com.rsebade.adfreeunzip.domain.ArchiveRepository
 import com.rsebade.adfreeunzip.domain.ArchiveResult
 import com.rsebade.adfreeunzip.domain.ExtractionSummary
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -13,6 +14,8 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -64,7 +67,7 @@ class UnzipViewModelTest {
         repository.extractResult = pending
 
         viewModel.onDestinationSelected("content://tree")
-        assertEquals(Extraction.InProgress, (viewModel.uiState.value as UnzipUiState.Browsing).extraction)
+        assertEquals(Extraction.InProgress(0, 1), (viewModel.uiState.value as UnzipUiState.Browsing).extraction)
         pending.complete(ArchiveResult.Success(summary))
 
         assertEquals(
@@ -99,6 +102,68 @@ class UnzipViewModelTest {
         assertEquals(before, viewModel.uiState.value)
     }
 
+    @Test
+    fun `extraction progress is reported as entries written out of the total`() {
+        repository.listResult = ArchiveResult.Success(entries + entries + entries + entries)
+        val viewModel = UnzipViewModel(repository)
+        viewModel.onArchiveSelected("content://a.zip")
+        repository.extractResult = CompletableDeferred()
+
+        viewModel.onDestinationSelected("content://tree")
+        repository.onProgress(3)
+
+        val extraction = (viewModel.uiState.value as UnzipUiState.Browsing).extraction
+        assertEquals(Extraction.InProgress(3, 4), extraction)
+        assertEquals(0.75f, (extraction as Extraction.InProgress).fraction)
+    }
+
+    @Test
+    fun `onCancelExtraction stops the extraction and says so`() {
+        val viewModel = UnzipViewModel(repository)
+        viewModel.onArchiveSelected("content://a.zip")
+        repository.extractResult = CompletableDeferred()
+        viewModel.onDestinationSelected("content://tree")
+
+        viewModel.onCancelExtraction()
+        repository.onProgress(1)
+
+        assertTrue(repository.wasCancelled)
+        assertEquals(Extraction.Cancelled, (viewModel.uiState.value as UnzipUiState.Browsing).extraction)
+    }
+
+    @Test
+    fun `closing the archive lets extraction keep running in the background`() {
+        val viewModel = UnzipViewModel(repository)
+        viewModel.onArchiveSelected("content://a.zip")
+        val pending = CompletableDeferred<ArchiveResult<ExtractionSummary>>()
+        repository.extractResult = pending
+        viewModel.onDestinationSelected("content://tree")
+
+        viewModel.onCloseArchive()
+        viewModel.onArchiveSelected("content://b.zip")
+
+        assertFalse(repository.wasCancelled)
+        assertTrue(pending.isActive)
+        assertEquals("content://b.zip", (viewModel.uiState.value as UnzipUiState.Browsing).archiveUri)
+    }
+
+    @Test
+    fun `extracting again after cancelling starts over`() {
+        val viewModel = UnzipViewModel(repository)
+        viewModel.onArchiveSelected("content://a.zip")
+        repository.extractResult = CompletableDeferred()
+        viewModel.onDestinationSelected("content://tree")
+        viewModel.onCancelExtraction()
+
+        repository.extractResult = CompletableDeferred(ArchiveResult.Success(summary))
+        viewModel.onDestinationSelected("content://tree")
+
+        assertEquals(
+            Extraction.Done(summary, "content://tree"),
+            (viewModel.uiState.value as UnzipUiState.Browsing).extraction,
+        )
+    }
+
     private fun extracted(): UnzipViewModel =
         UnzipViewModel(repository).apply {
             onArchiveSelected("content://a.zip")
@@ -131,12 +196,22 @@ class UnzipViewModelTest {
 
         override suspend fun list(archiveUri: String) = listResult
 
+        var onProgress: (Int) -> Unit = {}
+        var wasCancelled = false
+
         override suspend fun extract(
             archiveUri: String,
             destinationTreeUri: String,
+            onProgress: (entriesWritten: Int) -> Unit,
         ): ArchiveResult<ExtractionSummary> {
             extractions += archiveUri to destinationTreeUri
-            return extractResult.await()
+            this.onProgress = onProgress
+            try {
+                return extractResult.await()
+            } catch (e: CancellationException) {
+                wasCancelled = true
+                throw e
+            }
         }
     }
 }

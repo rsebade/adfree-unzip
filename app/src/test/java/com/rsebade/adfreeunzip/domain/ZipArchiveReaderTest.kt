@@ -2,11 +2,13 @@ package com.rsebade.adfreeunzip.domain
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Test
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.OutputStream
 import java.nio.charset.Charset
+import java.util.concurrent.CancellationException
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
@@ -100,11 +102,40 @@ class ZipArchiveReaderTest {
                 override fun createDirectory(path: List<String>) = Unit
 
                 override fun openFile(path: List<String>): OutputStream = throw java.io.IOException("disk full")
+
+                override fun deleteFile(path: List<String>) = Unit
             }
 
         val result = reader.extract({ ByteArrayInputStream(zip) }, target)
 
         assertEquals(ArchiveResult.Failure(ArchiveError.Io("disk full")), result)
+    }
+
+    @Test
+    fun `extract reports entries written so far`() {
+        val zip = zipOf("docs/" to null, "docs/a.txt" to "hello", "b.txt" to "hi")
+        val counts = mutableListOf<Int>()
+
+        reader.extract({ ByteArrayInputStream(zip) }, FakeTarget()) { counts += it }
+
+        assertEquals(listOf(1, 2, 3), counts.distinct())
+    }
+
+    @Test
+    fun `cancelling mid-file keeps finished files and deletes the partial one`() {
+        val zip = zipOf("done.txt" to "complete", "big.bin" to "x".repeat(300_000))
+        val target = FakeTarget()
+        var chunksIntoBigFile = 0
+
+        val thrown =
+            assertThrows(CancellationException::class.java) {
+                reader.extract({ ByteArrayInputStream(zip) }, target) { written ->
+                    if (written == 1 && ++chunksIntoBigFile > 2) throw CancellationException("cancelled")
+                }
+            }
+
+        assertEquals("cancelled", thrown.message)
+        assertEquals(mapOf("done.txt" to "complete"), target.files())
     }
 
     private fun zipOf(
@@ -137,5 +168,9 @@ class ZipArchiveReaderTest {
                 written[path.joinToString("/")] =
                     it
             }
+
+        override fun deleteFile(path: List<String>) {
+            written.remove(path.joinToString("/"))
+        }
     }
 }

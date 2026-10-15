@@ -7,7 +7,9 @@
     <string name="unzip_open_folder">Open folder</string>
     <string name="unzip_open_folder_unavailable">No app here can open the folder. Your files are in the folder you picked.</string>
     <string name="unzip_folder">Folder</string>
-    <string name="unzip_extracting">Extracting…</string>
+    <string name="unzip_extracting_progress">Extracting… %1$d of %2$d</string>
+    <string name="unzip_cancel">Cancel</string>
+    <string name="unzip_cancelled">Extraction cancelled. Files finished before that were kept.</string>
     <string name="unzip_error_no_entries">This isn\'t a zip file, or it\'s empty.</string>
     <string name="unzip_error_encrypted">This zip is password-protected, which isn\'t supported yet.</string>
     <string name="unzip_error_corrupted">This zip file is damaged or incomplete.</string>

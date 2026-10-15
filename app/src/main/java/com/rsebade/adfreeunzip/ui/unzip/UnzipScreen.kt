@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -76,6 +77,7 @@ fun UnzipRoute(
         onExtractAll = { pickDestination.launch(null) },
         onCloseArchive = viewModel::onCloseArchive,
         onOpenFolder = viewModel::onOpenFolder,
+        onCancelExtraction = viewModel::onCancelExtraction,
     )
 }
 
@@ -86,6 +88,7 @@ fun UnzipScreen(
     onExtractAll: () -> Unit,
     onCloseArchive: () -> Unit,
     onOpenFolder: () -> Unit,
+    onCancelExtraction: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(modifier = modifier.fillMaxSize()) { innerPadding ->
@@ -95,7 +98,15 @@ fun UnzipScreen(
             UnzipUiState.Loading ->
                 Column(content, Arrangement.Center, Alignment.CenterHorizontally) { CircularProgressIndicator() }
             is UnzipUiState.OpenFailed -> Message(errorText(uiState.error), onChooseArchive, content)
-            is UnzipUiState.Browsing -> Browsing(uiState, onExtractAll, onCloseArchive, onOpenFolder, content)
+            is UnzipUiState.Browsing ->
+                Browsing(
+                    uiState,
+                    onExtractAll,
+                    onCloseArchive,
+                    onOpenFolder,
+                    onCancelExtraction,
+                    content,
+                )
         }
     }
 }
@@ -124,6 +135,7 @@ private fun Browsing(
     onExtractAll: () -> Unit,
     onCloseArchive: () -> Unit,
     onOpenFolder: () -> Unit,
+    onCancelExtraction: () -> Unit,
     modifier: Modifier,
 ) {
     Column(modifier) {
@@ -147,7 +159,25 @@ private fun Browsing(
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             when (val extraction = state.extraction) {
                 Extraction.NotStarted -> Unit
-                Extraction.InProgress -> Text(stringResource(R.string.unzip_extracting))
+                is Extraction.InProgress -> {
+                    LinearProgressIndicator(
+                        progress = { extraction.fraction },
+                        modifier = Modifier.fillMaxWidth().testTag(UnzipTestTags.PROGRESS),
+                    )
+                    Text(
+                        stringResource(
+                            R.string.unzip_extracting_progress,
+                            extraction.entriesWritten,
+                            extraction.totalEntries,
+                        ),
+                        Modifier.testTag(UnzipTestTags.RESULT),
+                    )
+                }
+                Extraction.Cancelled ->
+                    Text(
+                        stringResource(R.string.unzip_cancelled),
+                        Modifier.testTag(UnzipTestTags.RESULT),
+                    )
                 is Extraction.Done -> {
                     Text(summaryText(extraction.summary), Modifier.testTag(UnzipTestTags.RESULT))
                     if (extraction.folderOpening == FolderOpening.Unavailable) {
@@ -164,12 +194,14 @@ private fun Browsing(
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TextButton(onClick = onCloseArchive) { Text(stringResource(R.string.unzip_close)) }
-                Button(
-                    onClick = onExtractAll,
-                    enabled = state.extraction != Extraction.InProgress,
-                    modifier = Modifier.testTag(UnzipTestTags.EXTRACT_ALL),
-                ) {
-                    Text(stringResource(R.string.unzip_extract_all))
+                if (state.extraction is Extraction.InProgress) {
+                    OutlinedButton(onClick = onCancelExtraction, modifier = Modifier.testTag(UnzipTestTags.CANCEL)) {
+                        Text(stringResource(R.string.unzip_cancel))
+                    }
+                } else {
+                    Button(onClick = onExtractAll, modifier = Modifier.testTag(UnzipTestTags.EXTRACT_ALL)) {
+                        Text(stringResource(R.string.unzip_extract_all))
+                    }
                 }
             }
         }
@@ -218,6 +250,8 @@ object UnzipTestTags {
     const val ENTRIES = "unzip_entries"
     const val EXTRACT_ALL = "unzip_extract_all"
     const val RESULT = "unzip_result"
+    const val PROGRESS = "unzip_progress"
+    const val CANCEL = "unzip_cancel"
     const val OPEN_FOLDER = "unzip_open_folder"
     const val OPEN_FOLDER_UNAVAILABLE = "unzip_open_folder_unavailable"
 }
@@ -242,6 +276,7 @@ private fun UnzipScreenPreview() {
             onExtractAll = {},
             onCloseArchive = {},
             onOpenFolder = {},
+            onCancelExtraction = {},
         )
     }
 }

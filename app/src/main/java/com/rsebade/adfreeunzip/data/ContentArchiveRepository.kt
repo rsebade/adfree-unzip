@@ -10,6 +10,7 @@ import com.rsebade.adfreeunzip.domain.ExtractionSummary
 import com.rsebade.adfreeunzip.domain.ZipArchiveReader
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.io.InputStream
@@ -38,9 +39,14 @@ class ContentArchiveRepository(
     override suspend fun extract(
         archiveUri: String,
         destinationTreeUri: String,
+        onProgress: (entriesWritten: Int) -> Unit,
     ): ArchiveResult<ExtractionSummary> =
         withContext(ioDispatcher) {
-            reader.extract({ open(archiveUri) }, SafExtractionTarget(resolver, destinationTreeUri.toUri()))
+            val target = SafExtractionTarget(resolver, destinationTreeUri.toUri())
+            reader.extract({ open(archiveUri) }, target) { written ->
+                ensureActive()
+                onProgress(written)
+            }
         }
 
     private fun open(archiveUri: String): InputStream =

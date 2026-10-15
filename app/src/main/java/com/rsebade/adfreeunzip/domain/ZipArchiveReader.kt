@@ -33,10 +33,16 @@ class ZipArchiveReader {
      * out not to be UTF-8 partway through, the archive is extracted again with IBM437, so
      * entries before that point are written twice (same content; names only differ for
      * non-ASCII names without the zip UTF-8 flag, which is rare).
+     *
+     * [onProgress] receives how many entries have been written so far. It is also called while
+     * a large file is copied (with an unchanged count), so throwing from it, e.g. a coroutine
+     * cancellation check, stops extraction promptly. A file left half-written by any failure
+     * is deleted from [target]; earlier, complete entries are kept.
      */
     fun extract(
         openStream: () -> InputStream,
         target: ExtractionTarget,
+        onProgress: (entriesWritten: Int) -> Unit = {},
     ): ArchiveResult<ExtractionSummary> =
         withCharsetFallback(openStream) { zip ->
             var files = 0
@@ -49,15 +55,39 @@ class ZipArchiveReader {
                     isDirectory -> {
                         target.createDirectory(path)
                         directories++
+                        onProgress(files + directories)
                     }
                     else -> {
-                        target.openFile(path).use { out -> zip.copyTo(out) }
+                        writeFile(zip, target, path) { onProgress(files + directories) }
                         files++
+                        onProgress(files + directories)
                     }
                 }
             }
             ExtractionSummary(files, directories, skipped).takeIf { files + directories + skipped.size > 0 }
         }
+
+    private fun writeFile(
+        zip: ZipInputStream,
+        target: ExtractionTarget,
+        path: List<String>,
+        onChunk: () -> Unit,
+    ) {
+        try {
+            target.openFile(path).use { out ->
+                val buffer = ByteArray(COPY_CHUNK_BYTES)
+                while (true) {
+                    val read = zip.read(buffer)
+                    if (read < 0) break
+                    out.write(buffer, 0, read)
+                    onChunk()
+                }
+            }
+        } catch (e: Throwable) {
+            runCatching { target.deleteFile(path) }
+            throw e
+        }
+    }
 
     /** Runs [block] over the archive; a null result from it means the archive had no entries. */
     private fun <T : Any> withCharsetFallback(
@@ -106,6 +136,7 @@ class ZipArchiveReader {
 
     companion object {
         private val IBM437: Charset = Charset.forName("IBM437")
+        private const val COPY_CHUNK_BYTES = 64 * 1024
 
         /**
          * Turns a raw entry name into safe path segments, or null if it would escape the
