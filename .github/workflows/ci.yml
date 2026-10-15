@@ -46,6 +46,20 @@ jobs:
             app/build/reports/
             app/build/test-results/
 
+  version:
+    name: Version bumped
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Merges to main carry the bump already; this guards branches before they merge.
+    if: github.ref != 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Check versionCode and versionName were raised
+        run: ./scripts/check-version-bump.sh origin/main
+
   instrumented:
     name: Compose UI tests (emulator)
     runs-on: ubuntu-latest
