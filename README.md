@@ -26,7 +26,7 @@ it with `./scripts/verify.sh` + CI, and opens a PR with an installable APK.
 
 1. Start a Claude Code session on this repo from the Claude app and describe the change.
 2. The agent follows `agents/CLAUDE.md`, runs `./scripts/verify.sh`, and pushes a PR.
-3. Open the PR's CI run → download the **app-debug** artifact → install the APK
+3. Open the PR's CI run → download the **Unzip-<version>** artifact (e.g. Unzip-0.1.0) → install the APK
    (allow "install unknown apps" for your browser/files app once).
 4. Review, comment, merge.
 

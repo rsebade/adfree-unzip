@@ -51,6 +51,23 @@ android {
     }
 }
 
+// Names the APK "Unzip-debug.apk" / "Unzip-release.apk" instead of "app-debug.apk".
+base {
+    archivesName.set("Unzip")
+}
+
+// The installable copy CI uploads, named for the version: build/dist/Unzip-0.1.0.apk.
+// AGP has no public API to rename variant outputs, so this copies the debug APK.
+val distApkName = "Unzip-${android.defaultConfig.versionName}.apk"
+tasks.register<Copy>("distDebugApk") {
+    dependsOn("assembleDebug")
+    from(layout.buildDirectory.dir("outputs/apk/debug")) {
+        include("*.apk")
+        rename(".*\\.apk", distApkName)
+    }
+    into(layout.buildDirectory.dir("dist"))
+}
+
 kotlin {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)

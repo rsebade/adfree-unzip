@@ -26,11 +26,15 @@ jobs:
       - name: Verify
         run: ./scripts/verify.sh
 
-      - name: Upload debug APK (install this on your phone)
+      - name: Name the APK artifact
+        id: apk
+        run: echo "name=$(basename app/build/dist/*.apk .apk)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload APK (install this on your phone)
         uses: actions/upload-artifact@v7
         with:
-          name: app-debug
-          path: app/build/outputs/apk/debug/*.apk
+          name: ${{ steps.apk.outputs.name }}
+          path: app/build/dist/*.apk
           retention-days: 14
 
       - name: Upload reports
