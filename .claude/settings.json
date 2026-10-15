@@ -1,0 +1,22 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ \"$CLAUDE_CODE_REMOTE\" = \"true\" ]; then \"$CLAUDE_PROJECT_DIR\"/scripts/setup-android-sdk.sh || echo 'WARN: Android SDK setup failed (is dl.google.com allowed by the network policy?). Builds will rely on CI.'; fi",
+            "timeout": 600
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew:*)",
+      "Bash(./scripts/verify.sh:*)",
+      "Bash(./scripts/setup-android-sdk.sh)"
+    ]
+  }
+}
