@@ -1,9 +1,25 @@
 <resources>
     <string name="app_name">Unzip</string>
-    <string name="home_greeting">Hello, %1$s!</string>
-    <string name="home_increment">Tap me</string>
-    <plurals name="home_count">
-        <item quantity="one">Tapped %1$d time</item>
-        <item quantity="other">Tapped %1$d times</item>
+    <string name="unzip_empty">Open a zip file to see what\'s inside.</string>
+    <string name="unzip_choose_archive">Choose zip file</string>
+    <string name="unzip_extract_all">Extract all</string>
+    <string name="unzip_close">Close</string>
+    <string name="unzip_folder">Folder</string>
+    <string name="unzip_extracting">Extracting…</string>
+    <string name="unzip_error_no_entries">This isn\'t a zip file, or it\'s empty.</string>
+    <string name="unzip_error_encrypted">This zip is password-protected, which isn\'t supported yet.</string>
+    <string name="unzip_error_corrupted">This zip file is damaged or incomplete.</string>
+    <string name="unzip_error_io">Couldn\'t read the zip or write to the folder. Check there\'s enough space and try again.</string>
+    <plurals name="unzip_item_count">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
+    <plurals name="unzip_extracted">
+        <item quantity="one">Extracted %1$d file.</item>
+        <item quantity="other">Extracted %1$d files.</item>
+    </plurals>
+    <plurals name="unzip_skipped_unsafe">
+        <item quantity="one">Skipped %1$d item with an unsafe path.</item>
+        <item quantity="other">Skipped %1$d items with unsafe paths.</item>
     </plurals>
 </resources>

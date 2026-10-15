@@ -51,7 +51,7 @@ app/src/test/              # JVM unit tests — mirror main package structure
 app/src/androidTest/       # instrumented / Compose UI tests
 ```
 
-Feature pattern (see `ui/home/` as the reference implementation):
+Feature pattern (see `ui/unzip/` as the reference implementation):
 - `XRoute` — stateful; obtains the ViewModel and collects state.
 - `XScreen` — **stateless**; takes `uiState` + event lambdas + `modifier`. Has a `@Preview`.
 - `XViewModel` — holds `MutableStateFlow<XUiState>`, exposes read-only `StateFlow`; public
