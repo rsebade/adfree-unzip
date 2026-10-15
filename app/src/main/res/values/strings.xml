@@ -4,6 +4,8 @@
     <string name="unzip_choose_archive">Choose zip file</string>
     <string name="unzip_extract_all">Extract all</string>
     <string name="unzip_close">Close</string>
+    <string name="unzip_open_folder">Open folder</string>
+    <string name="unzip_open_folder_unavailable">No app here can open the folder. Your files are in the folder you picked.</string>
     <string name="unzip_folder">Folder</string>
     <string name="unzip_extracting">Extracting…</string>
     <string name="unzip_error_no_entries">This isn\'t a zip file, or it\'s empty.</string>

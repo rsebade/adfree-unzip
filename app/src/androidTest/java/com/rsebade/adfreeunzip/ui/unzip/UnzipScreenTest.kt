@@ -57,18 +57,47 @@ class UnzipScreenTest {
 
     @Test
     fun finishedExtractionShowsFileCount() {
-        setScreen(browsing.copy(extraction = Extraction.Done(ExtractionSummary(3, 1, emptyList()))))
+        setScreen(browsing.copy(extraction = Extraction.Done(ExtractionSummary(3, 1, emptyList()), "content://tree")))
 
         composeRule.onNodeWithTag(UnzipTestTags.RESULT).assertTextEquals("Extracted 3 files.")
+    }
+
+    @Test
+    fun finishedExtractionOffersToOpenTheFolder() {
+        var opened = 0
+        val done = Extraction.Done(ExtractionSummary(3, 1, emptyList()), "content://tree", FolderOpening.Idle)
+        setScreen(browsing.copy(extraction = done), onOpenFolder = { opened++ })
+
+        composeRule.onNodeWithTag(UnzipTestTags.OPEN_FOLDER_UNAVAILABLE).assertDoesNotExist()
+        composeRule.onNodeWithTag(UnzipTestTags.OPEN_FOLDER).performClick()
+
+        assertEquals(1, opened)
+    }
+
+    @Test
+    fun explainsWhenNoAppCanOpenTheFolder() {
+        val done = Extraction.Done(ExtractionSummary(3, 1, emptyList()), "content://tree", FolderOpening.Unavailable)
+        setScreen(browsing.copy(extraction = done))
+
+        composeRule.onNodeWithTag(UnzipTestTags.OPEN_FOLDER_UNAVAILABLE).assertExists()
     }
 
     private fun setScreen(
         state: UnzipUiState,
         onChooseArchive: () -> Unit = {},
         onExtractAll: () -> Unit = {},
+        onOpenFolder: () -> Unit = {},
     ) {
         composeRule.setContent {
-            AppTheme { UnzipScreen(state, onChooseArchive, onExtractAll, onCloseArchive = {}) }
+            AppTheme {
+                UnzipScreen(
+                    state,
+                    onChooseArchive,
+                    onExtractAll,
+                    onCloseArchive = {},
+                    onOpenFolder = onOpenFolder,
+                )
+            }
         }
     }
 }

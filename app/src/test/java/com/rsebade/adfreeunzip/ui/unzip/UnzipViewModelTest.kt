@@ -67,9 +67,46 @@ class UnzipViewModelTest {
         assertEquals(Extraction.InProgress, (viewModel.uiState.value as UnzipUiState.Browsing).extraction)
         pending.complete(ArchiveResult.Success(summary))
 
-        assertEquals(Extraction.Done(summary), (viewModel.uiState.value as UnzipUiState.Browsing).extraction)
+        assertEquals(
+            Extraction.Done(summary, "content://tree", FolderOpening.Requested),
+            (viewModel.uiState.value as UnzipUiState.Browsing).extraction,
+        )
         assertEquals(listOf("content://a.zip" to "content://tree"), repository.extractions)
     }
+
+    @Test
+    fun `onFolderOpenResult records whether the folder could be shown`() {
+        val viewModel = extracted()
+
+        viewModel.onFolderOpenResult(opened = true)
+        assertEquals(FolderOpening.Idle, viewModel.folderOpening())
+
+        viewModel.onOpenFolder()
+        assertEquals(FolderOpening.Requested, viewModel.folderOpening())
+
+        viewModel.onFolderOpenResult(opened = false)
+        assertEquals(FolderOpening.Unavailable, viewModel.folderOpening())
+    }
+
+    @Test
+    fun `onOpenFolder does nothing before extraction finishes`() {
+        val viewModel = UnzipViewModel(repository)
+        viewModel.onArchiveSelected("content://a.zip")
+        val before = viewModel.uiState.value
+
+        viewModel.onOpenFolder()
+
+        assertEquals(before, viewModel.uiState.value)
+    }
+
+    private fun extracted(): UnzipViewModel =
+        UnzipViewModel(repository).apply {
+            onArchiveSelected("content://a.zip")
+            onDestinationSelected("content://tree")
+        }
+
+    private fun UnzipViewModel.folderOpening(): FolderOpening =
+        ((uiState.value as UnzipUiState.Browsing).extraction as Extraction.Done).folderOpening
 
     @Test
     fun `extraction finishing after the archive was closed leaves no archive open`() {

@@ -42,11 +42,22 @@ sealed interface Extraction {
 
     data class Done(
         val summary: ExtractionSummary,
+        val folderUri: String,
+        val folderOpening: FolderOpening = FolderOpening.Requested,
     ) : Extraction
 
     data class Failed(
         val error: ArchiveError,
     ) : Extraction
+}
+
+/** Showing the extracted files in the Files app: asked for, handled, or not possible. */
+sealed interface FolderOpening {
+    data object Requested : FolderOpening
+
+    data object Idle : FolderOpening
+
+    data object Unavailable : FolderOpening
 }
 
 class UnzipViewModel(
@@ -78,16 +89,30 @@ class UnzipViewModel(
         viewModelScope.launch {
             val extraction =
                 when (val result = repository.extract(browsing.archiveUri, destinationTreeUri)) {
-                    is ArchiveResult.Success -> Extraction.Done(result.value)
+                    is ArchiveResult.Success -> Extraction.Done(result.value, destinationTreeUri)
                     is ArchiveResult.Failure -> Extraction.Failed(result.error)
                 }
             setExtraction(browsing.archiveUri, extraction)
         }
     }
 
+    /** "Open folder" tapped after extracting; the route performs the request. */
+    fun onOpenFolder() = setFolderOpening(FolderOpening.Requested)
+
+    /** The route tried to open the folder; [opened] is false if no app could show it. */
+    fun onFolderOpenResult(opened: Boolean) =
+        setFolderOpening(if (opened) FolderOpening.Idle else FolderOpening.Unavailable)
+
     fun onCloseArchive() {
         loadJob?.cancel()
         _uiState.value = UnzipUiState.NoArchive
+    }
+
+    private fun setFolderOpening(folderOpening: FolderOpening) {
+        _uiState.update { state ->
+            val done = (state as? UnzipUiState.Browsing)?.extraction as? Extraction.Done ?: return@update state
+            state.copy(extraction = done.copy(folderOpening = folderOpening))
+        }
     }
 
     /** Ignored if the user has since closed or switched archives. */
