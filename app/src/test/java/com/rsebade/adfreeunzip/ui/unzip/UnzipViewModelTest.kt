@@ -4,9 +4,11 @@ import com.rsebade.adfreeunzip.domain.ArchiveEntry
 import com.rsebade.adfreeunzip.domain.ArchiveError
 import com.rsebade.adfreeunzip.domain.ArchiveRepository
 import com.rsebade.adfreeunzip.domain.ArchiveResult
+import com.rsebade.adfreeunzip.domain.ExtractionRunner
 import com.rsebade.adfreeunzip.domain.ExtractionSummary
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -37,12 +39,12 @@ class UnzipViewModelTest {
 
     @Test
     fun `initial state has no archive`() {
-        assertEquals(UnzipUiState.NoArchive, UnzipViewModel(repository).uiState.value)
+        assertEquals(UnzipUiState.NoArchive, newViewModel().uiState.value)
     }
 
     @Test
     fun `onArchiveSelected shows the archive contents`() {
-        val viewModel = UnzipViewModel(repository)
+        val viewModel = newViewModel()
 
         viewModel.onArchiveSelected("content://a.zip")
 
@@ -52,7 +54,7 @@ class UnzipViewModelTest {
     @Test
     fun `onArchiveSelected reports why an archive can't be opened`() {
         repository.listResult = ArchiveResult.Failure(ArchiveError.Encrypted)
-        val viewModel = UnzipViewModel(repository)
+        val viewModel = newViewModel()
 
         viewModel.onArchiveSelected("content://a.zip")
 
@@ -61,7 +63,7 @@ class UnzipViewModelTest {
 
     @Test
     fun `onDestinationSelected extracts and reports the summary`() {
-        val viewModel = UnzipViewModel(repository)
+        val viewModel = newViewModel()
         viewModel.onArchiveSelected("content://a.zip")
         val pending = CompletableDeferred<ArchiveResult<ExtractionSummary>>()
         repository.extractResult = pending
@@ -93,7 +95,7 @@ class UnzipViewModelTest {
 
     @Test
     fun `onOpenFolder does nothing before extraction finishes`() {
-        val viewModel = UnzipViewModel(repository)
+        val viewModel = newViewModel()
         viewModel.onArchiveSelected("content://a.zip")
         val before = viewModel.uiState.value
 
@@ -105,7 +107,7 @@ class UnzipViewModelTest {
     @Test
     fun `extraction progress is reported as entries written out of the total`() {
         repository.listResult = ArchiveResult.Success(entries + entries + entries + entries)
-        val viewModel = UnzipViewModel(repository)
+        val viewModel = newViewModel()
         viewModel.onArchiveSelected("content://a.zip")
         repository.extractResult = CompletableDeferred()
 
@@ -119,7 +121,7 @@ class UnzipViewModelTest {
 
     @Test
     fun `onCancelExtraction stops the extraction and says so`() {
-        val viewModel = UnzipViewModel(repository)
+        val viewModel = newViewModel()
         viewModel.onArchiveSelected("content://a.zip")
         repository.extractResult = CompletableDeferred()
         viewModel.onDestinationSelected("content://tree")
@@ -133,7 +135,7 @@ class UnzipViewModelTest {
 
     @Test
     fun `closing the archive lets extraction keep running in the background`() {
-        val viewModel = UnzipViewModel(repository)
+        val viewModel = newViewModel()
         viewModel.onArchiveSelected("content://a.zip")
         val pending = CompletableDeferred<ArchiveResult<ExtractionSummary>>()
         repository.extractResult = pending
@@ -149,7 +151,7 @@ class UnzipViewModelTest {
 
     @Test
     fun `extracting again after cancelling starts over`() {
-        val viewModel = UnzipViewModel(repository)
+        val viewModel = newViewModel()
         viewModel.onArchiveSelected("content://a.zip")
         repository.extractResult = CompletableDeferred()
         viewModel.onDestinationSelected("content://tree")
@@ -164,8 +166,29 @@ class UnzipViewModelTest {
         )
     }
 
+    @Test
+    fun `reopening an archive extracted in the background shows the result without opening the folder`() {
+        val viewModel = newViewModel()
+        viewModel.onArchiveSelected("content://a.zip")
+        val pending = CompletableDeferred<ArchiveResult<ExtractionSummary>>()
+        repository.extractResult = pending
+        viewModel.onDestinationSelected("content://tree")
+        viewModel.onCloseArchive()
+        pending.complete(ArchiveResult.Success(summary))
+
+        viewModel.onArchiveSelected("content://a.zip")
+
+        assertEquals(
+            Extraction.Done(summary, "content://tree", FolderOpening.Idle),
+            (viewModel.uiState.value as UnzipUiState.Browsing).extraction,
+        )
+    }
+
+    private fun newViewModel(): UnzipViewModel =
+        UnzipViewModel(repository, ExtractionRunner(repository, CoroutineScope(Dispatchers.Main)))
+
     private fun extracted(): UnzipViewModel =
-        UnzipViewModel(repository).apply {
+        newViewModel().apply {
             onArchiveSelected("content://a.zip")
             onDestinationSelected("content://tree")
         }
@@ -175,7 +198,7 @@ class UnzipViewModelTest {
 
     @Test
     fun `extraction finishing after the archive was closed leaves no archive open`() {
-        val viewModel = UnzipViewModel(repository)
+        val viewModel = newViewModel()
         viewModel.onArchiveSelected("content://a.zip")
         val pending = CompletableDeferred<ArchiveResult<ExtractionSummary>>()
         repository.extractResult = pending
