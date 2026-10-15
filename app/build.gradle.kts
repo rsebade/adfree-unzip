@@ -51,6 +51,11 @@ android {
     }
 }
 
+// Names the APK "Unzip-debug.apk" / "Unzip-release.apk" instead of "app-debug.apk".
+base {
+    archivesName.set("Unzip")
+}
+
 kotlin {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)

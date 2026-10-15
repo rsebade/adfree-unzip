@@ -10,7 +10,7 @@
 
 ## Manual test steps (on device)
 
-<!-- Download the `app-debug` artifact from this PR's CI run, install, then: -->
+<!-- Download the `Unzip-debug` artifact from this PR's CI run, install, then: -->
 1.
 
 ## Screenshots
