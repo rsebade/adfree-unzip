@@ -19,6 +19,7 @@ class SafExtractionTarget(
     private val treeUri: Uri,
 ) : ExtractionTarget {
     private val directories = hashMapOf<List<String>, Uri>()
+    private val files = hashMapOf<List<String>, Uri>()
 
     override fun createDirectory(path: List<String>) {
         rethrowAsIo { directory(path) }
@@ -31,8 +32,14 @@ class SafExtractionTarget(
             val file =
                 DocumentsContract.createDocument(resolver, parent, mimeTypeOf(name), name)
                     ?: throw IOException("Couldn't create $name")
+            files[path] = file
             resolver.openOutputStream(file) ?: throw IOException("Couldn't write $name")
         }
+
+    override fun deleteFile(path: List<String>) {
+        val file = files.remove(path) ?: return
+        rethrowAsIo { DocumentsContract.deleteDocument(resolver, file) }
+    }
 
     private fun directory(path: List<String>): Uri =
         directories.getOrPut(path) {

@@ -1,6 +1,5 @@
 package com.rsebade.adfreeunzip.ui.unzip
 
-import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -49,10 +48,26 @@ class UnzipScreenTest {
     }
 
     @Test
-    fun extractAllIsDisabledWhileExtracting() {
-        setScreen(browsing.copy(extraction = Extraction.InProgress))
+    fun extractingShowsProgressAndCanBeCancelled() {
+        var cancelled = 0
+        setScreen(browsing.copy(extraction = Extraction.InProgress(3, 4)), onCancelExtraction = { cancelled++ })
 
-        composeRule.onNodeWithTag(UnzipTestTags.EXTRACT_ALL).assertIsNotEnabled()
+        composeRule.onNodeWithTag(UnzipTestTags.PROGRESS).assertExists()
+        composeRule.onNodeWithTag(UnzipTestTags.RESULT).assertTextEquals("Extracting… 3 of 4")
+        composeRule.onNodeWithTag(UnzipTestTags.EXTRACT_ALL).assertDoesNotExist()
+        composeRule.onNodeWithTag(UnzipTestTags.CANCEL).performClick()
+
+        assertEquals(1, cancelled)
+    }
+
+    @Test
+    fun cancelledExtractionSaysSoAndOffersExtractAgain() {
+        setScreen(browsing.copy(extraction = Extraction.Cancelled))
+
+        composeRule
+            .onNodeWithTag(UnzipTestTags.RESULT)
+            .assertTextEquals("Extraction cancelled. Files finished before that were kept.")
+        composeRule.onNodeWithTag(UnzipTestTags.EXTRACT_ALL).assertExists()
     }
 
     @Test
@@ -87,6 +102,7 @@ class UnzipScreenTest {
         onChooseArchive: () -> Unit = {},
         onExtractAll: () -> Unit = {},
         onOpenFolder: () -> Unit = {},
+        onCancelExtraction: () -> Unit = {},
     ) {
         composeRule.setContent {
             AppTheme {
@@ -96,6 +112,7 @@ class UnzipScreenTest {
                     onExtractAll,
                     onCloseArchive = {},
                     onOpenFolder = onOpenFolder,
+                    onCancelExtraction = onCancelExtraction,
                 )
             }
         }

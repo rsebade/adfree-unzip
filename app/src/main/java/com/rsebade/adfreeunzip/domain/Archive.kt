@@ -54,4 +54,7 @@ interface ExtractionTarget {
 
     /** Opens [path] for writing, creating parent folders as needed. The caller closes the stream. */
     fun openFile(path: List<String>): OutputStream
+
+    /** Removes a file this target created at [path] whose contents were left incomplete. */
+    fun deleteFile(path: List<String>)
 }
