@@ -14,6 +14,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -128,6 +129,22 @@ class UnzipViewModelTest {
 
         assertTrue(repository.wasCancelled)
         assertEquals(Extraction.Cancelled, (viewModel.uiState.value as UnzipUiState.Browsing).extraction)
+    }
+
+    @Test
+    fun `closing the archive lets extraction keep running in the background`() {
+        val viewModel = UnzipViewModel(repository)
+        viewModel.onArchiveSelected("content://a.zip")
+        val pending = CompletableDeferred<ArchiveResult<ExtractionSummary>>()
+        repository.extractResult = pending
+        viewModel.onDestinationSelected("content://tree")
+
+        viewModel.onCloseArchive()
+        viewModel.onArchiveSelected("content://b.zip")
+
+        assertFalse(repository.wasCancelled)
+        assertTrue(pending.isActive)
+        assertEquals("content://b.zip", (viewModel.uiState.value as UnzipUiState.Browsing).archiveUri)
     }
 
     @Test

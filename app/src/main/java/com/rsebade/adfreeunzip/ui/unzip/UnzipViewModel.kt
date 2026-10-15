@@ -80,7 +80,6 @@ class UnzipViewModel(
 
     fun onArchiveSelected(archiveUri: String) {
         loadJob?.cancel()
-        extractJob?.cancel()
         _uiState.value = UnzipUiState.Loading
         loadJob =
             viewModelScope.launch {
@@ -125,9 +124,9 @@ class UnzipViewModel(
     fun onFolderOpenResult(opened: Boolean) =
         setFolderOpening(if (opened) FolderOpening.Idle else FolderOpening.Unavailable)
 
+    /** Leaves any running extraction to finish in the background; only [onCancelExtraction] stops it. */
     fun onCloseArchive() {
         loadJob?.cancel()
-        extractJob?.cancel()
         _uiState.value = UnzipUiState.NoArchive
     }
 
