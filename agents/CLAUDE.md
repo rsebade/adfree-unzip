@@ -109,7 +109,7 @@ Feature pattern (see `ui/home/` as the reference implementation):
   `gradle/init/maven-central-mirror.init.gradle.kts` into `~/.gradle/init.d/`, which makes
   Gradle use Google's Maven Central mirror first (needs `maven-central.storage-download.googleapis.com`).
   If you still see 429s, check that file is installed before blaming the build.
-- The human tests on a real phone by downloading the `Unzip-debug` APK artifact from
+- The human tests on a real phone by downloading the `Unzip-<version>` APK artifact (e.g. `Unzip-0.1.0`) from
   the CI run on the PR. Mention in the PR what they should tap through to verify.
 - The `Compose UI tests (emulator)` CI job runs on every push after `verify` passes. Check
   its result on your commit before claiming UI tests passed; you can't run them locally.
