@@ -3,6 +3,6 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-./gradlew --no-daemon ktlintCheck lintDebug testDebugUnitTest compileDebugAndroidTestKotlin assembleDebug "$@"
+./gradlew --no-daemon ktlintCheck lintDebug testDebugUnitTest compileDebugAndroidTestKotlin distDebugApk "$@"
 
-echo "verify: OK — debug APK at app/build/outputs/apk/debug/"
+echo "verify: OK — installable APK at app/build/dist/"
