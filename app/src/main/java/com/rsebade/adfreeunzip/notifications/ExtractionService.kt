@@ -53,12 +53,15 @@ class ExtractionService : Service() {
             intent.getStringExtra(EXTRA_ARCHIVE_URI)?.let(app.extractionRunner::cancel)
             return START_NOT_STICKY
         }
+        // Render through the planner so it knows about any progress notification posted here and
+        // later replaces it; the collector may first see the extraction already finished.
+        val statuses = app.extractionRunner.statuses.value
+        render(statuses)
         // Started with startForegroundService: Android requires startForeground right away.
-        val running =
-            app.extractionRunner.statuses.value.entries
-                .firstOrNull { it.value is ExtractionStatus.Running }
-        if (running != null) {
-            enterForeground(running.key, running.value as ExtractionStatus.Running)
+        val uri = foregroundUri
+        val running = uri?.let { statuses[it] as? ExtractionStatus.Running }
+        if (uri != null && running != null) {
+            enterForeground(uri, running)
         } else {
             // It already finished; satisfy the requirement, then leave.
             ServiceCompat.startForeground(this, PLACEHOLDER_ID, placeholderNotification(), FOREGROUND_TYPE)
