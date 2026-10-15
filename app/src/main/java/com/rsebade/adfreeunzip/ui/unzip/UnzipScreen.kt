@@ -1,5 +1,8 @@
 package com.rsebade.adfreeunzip.ui.unzip
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.text.format.Formatter
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -33,6 +36,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.rsebade.adfreeunzip.R
@@ -61,6 +65,9 @@ fun UnzipRoute(
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
             uri?.let { viewModel.onDestinationSelected(it.toString()) }
         }
+    // Asked for on Android 13+ before picking a destination; extraction goes ahead either way.
+    val requestNotifications =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { pickDestination.launch(null) }
     LaunchedEffect(initialArchiveUri) {
         initialArchiveUri?.let(viewModel::onArchiveSelected)
     }
@@ -74,7 +81,16 @@ fun UnzipRoute(
     UnzipScreen(
         uiState = uiState,
         onChooseArchive = { pickArchive.launch(ZIP_MIME_TYPES) },
-        onExtractAll = { pickDestination.launch(null) },
+        onExtractAll = {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+                PackageManager.PERMISSION_GRANTED
+            ) {
+                requestNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                pickDestination.launch(null)
+            }
+        },
         onCloseArchive = viewModel::onCloseArchive,
         onOpenFolder = viewModel::onOpenFolder,
         onCancelExtraction = viewModel::onCancelExtraction,
@@ -236,13 +252,7 @@ private fun summaryText(summary: ExtractionSummary): String {
 }
 
 @Composable
-private fun errorText(error: ArchiveError): String =
-    when (error) {
-        ArchiveError.NoEntries -> stringResource(R.string.unzip_error_no_entries)
-        ArchiveError.Encrypted -> stringResource(R.string.unzip_error_encrypted)
-        ArchiveError.Corrupted -> stringResource(R.string.unzip_error_corrupted)
-        is ArchiveError.Io -> stringResource(R.string.unzip_error_io)
-    }
+private fun errorText(error: ArchiveError): String = stringResource(error.messageRes())
 
 object UnzipTestTags {
     const val MESSAGE = "unzip_message"

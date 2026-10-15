@@ -14,6 +14,13 @@
     <string name="unzip_error_encrypted">This zip is password-protected, which isn\'t supported yet.</string>
     <string name="unzip_error_corrupted">This zip file is damaged or incomplete.</string>
     <string name="unzip_error_io">Couldn\'t read the zip or write to the folder. Check there\'s enough space and try again.</string>
+    <string name="notification_channel_progress">Extraction progress</string>
+    <string name="notification_channel_results">Finished extractions</string>
+    <string name="notification_extracting_title">Extracting %1$s</string>
+    <string name="notification_extracted_title">Extracted %1$s</string>
+    <string name="notification_tap_to_open">Tap to open the folder.</string>
+    <string name="notification_failed_title">Couldn\'t extract %1$s</string>
+    <string name="notification_cancelled_title">Stopped extracting %1$s</string>
     <plurals name="unzip_item_count">
         <item quantity="one">%1$d item</item>
         <item quantity="other">%1$d items</item>

@@ -74,6 +74,8 @@ sealed interface FolderOpening {
 class UnzipViewModel(
     private val repository: ArchiveRepository,
     private val runner: ExtractionRunner,
+    /** Whether the app is on screen; the folder only opens by itself if the user is here to see it. */
+    private val isAppVisible: () -> Boolean = { true },
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<UnzipUiState>(UnzipUiState.NoArchive)
     val uiState: StateFlow<UnzipUiState> = _uiState.asStateFlow()
@@ -165,7 +167,7 @@ class UnzipViewModel(
         folderUri: String,
         previous: Extraction,
     ): Extraction.Done {
-        val watchedItFinish = previous is Extraction.InProgress
+        val watchedItFinish = previous is Extraction.InProgress && isAppVisible()
         return Extraction.Done(summary, folderUri, if (watchedItFinish) FolderOpening.Requested else FolderOpening.Idle)
     }
 
@@ -174,7 +176,7 @@ class UnzipViewModel(
             viewModelFactory {
                 initializer {
                     val app = checkNotNull(this[APPLICATION_KEY]) as UnzipApplication
-                    UnzipViewModel(app.archiveRepository, app.extractionRunner)
+                    UnzipViewModel(app.archiveRepository, app.extractionRunner) { app.isAppVisible }
                 }
             }
     }
