@@ -1,4 +1,4 @@
-package com.example.app.ui.home
+package com.rsebade.adfreeunzip.ui.home
 
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow

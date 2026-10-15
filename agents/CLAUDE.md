@@ -5,25 +5,6 @@ Development here is **agent-driven and often initiated from a phone**: the human
 reviews PRs and installs APKs; agents write, verify, and ship the code. Optimize
 for changes a human can review on a small screen and trust without running locally.
 
-<!-- template-only:start -->
-## 0. Template or project?
-
-This repo is a **template**: people create new app repos from it with GitHub's
-"Use this template". Work out which one you're in before doing anything else:
-
-- **You're in the template itself** (`rsebade/claude-android-scaffold`): don't build app
-  features here. Changes should improve the starting point every new app gets: toolchain and
-  dependency updates, CI, agent rules and docs, `scripts/`, and the reference feature in
-  `ui/home/`. If you're asked for an app feature, say this is the template and point to
-  "Start a new app" in `README.md`. Package, path or app-name changes must keep
-  `scripts/init-project.sh` working; the `Template` CI workflow checks that it does.
-- **You're in a new repo made from the template, and `scripts/init-project.sh` still exists**:
-  the project hasn't been set up yet. Before any feature work, ask for the package name
-  (e.g. `com.yourname.yourapp`) and app name, run
-  `./scripts/init-project.sh <package> "<App Name>"`, run `./scripts/verify.sh`, and open
-  that as its own PR.
-
-<!-- template-only:end -->
 ## 1. Golden rules
 
 1. **Never claim it works without proof.** "Done" means `./scripts/verify.sh` passed
@@ -60,7 +41,7 @@ This repo is a **template**: people create new app repos from it with GitHub's
 ## 3. Project layout
 
 ```
-app/src/main/java/com/example/app/
+app/src/main/java/com/rsebade/adfreeunzip/
   MainActivity.kt          # only entry point; hosts Compose
   ui/theme/                # AppTheme, colors, typography
   ui/<feature>/            # <Feature>Route, <Feature>Screen, <Feature>ViewModel, <Feature>UiState
