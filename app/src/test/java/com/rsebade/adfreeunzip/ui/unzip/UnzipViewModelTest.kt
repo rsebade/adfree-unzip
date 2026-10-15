@@ -184,6 +184,25 @@ class UnzipViewModelTest {
         )
     }
 
+    @Test
+    fun `extraction finishing while the app is in the background does not open the folder by itself`() {
+        var visible = true
+        val runner = ExtractionRunner(repository, CoroutineScope(Dispatchers.Main))
+        val viewModel = UnzipViewModel(repository, runner) { visible }
+        viewModel.onArchiveSelected("content://a.zip")
+        val pending = CompletableDeferred<ArchiveResult<ExtractionSummary>>()
+        repository.extractResult = pending
+        viewModel.onDestinationSelected("content://tree")
+
+        visible = false
+        pending.complete(ArchiveResult.Success(summary))
+
+        assertEquals(
+            Extraction.Done(summary, "content://tree", FolderOpening.Idle),
+            (viewModel.uiState.value as UnzipUiState.Browsing).extraction,
+        )
+    }
+
     private fun newViewModel(): UnzipViewModel =
         UnzipViewModel(repository, ExtractionRunner(repository, CoroutineScope(Dispatchers.Main)))
 

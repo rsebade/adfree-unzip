@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Status-bar icon: the launcher icon's folder and zipper, cropped so it fills the small icon. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="52"
+    android:viewportHeight="52">
+    <group
+        android:translateX="-28"
+        android:translateY="-28">
+        <path
+            android:fillColor="#FFFFFF"
+            android:fillType="evenOdd"
+            android:pathData="M33,34 h14 a2,2 0 0 1 1.6,0.8 l2.8,3.2 h22.6 a4,4 0 0 1 4,4 v28 a4,4 0 0 1 -4,4 h-41 a4,4 0 0 1 -4,-4 v-32 a4,4 0 0 1 4,-4 z M50,38 h4 v3.2 h-4 z M54,41.2 h4 v3.2 h-4 z M50,44.4 h4 v3.2 h-4 z M54,47.6 h4 v3.2 h-4 z M52,52 h4 a2,2 0 0 1 2,2 v8 a4,4 0 0 1 -8,0 v-8 a2,2 0 0 1 2,-2 z M54,61 a1.6,1.6 0 1 0 0.01,0 z" />
+    </group>
+</vector>

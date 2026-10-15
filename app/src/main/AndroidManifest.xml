@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Progress and result notifications for extractions (asked for on first "Extract all"). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Keeps a long extraction running after the user leaves the app. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
     <application
         android:name=".UnzipApplication"
         android:allowBackup="false"
@@ -27,6 +33,11 @@
                 <data android:mimeType="application/x-zip-compressed" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".notifications.ExtractionService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
     </application>
 
 </manifest>
