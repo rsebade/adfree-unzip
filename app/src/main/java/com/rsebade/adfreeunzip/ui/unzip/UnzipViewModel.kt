@@ -5,11 +5,13 @@ import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.AP
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import com.rsebade.adfreeunzip.data.ContentArchiveRepository
+import com.rsebade.adfreeunzip.UnzipApplication
 import com.rsebade.adfreeunzip.domain.ArchiveEntry
 import com.rsebade.adfreeunzip.domain.ArchiveError
 import com.rsebade.adfreeunzip.domain.ArchiveRepository
 import com.rsebade.adfreeunzip.domain.ArchiveResult
+import com.rsebade.adfreeunzip.domain.ExtractionRunner
+import com.rsebade.adfreeunzip.domain.ExtractionStatus
 import com.rsebade.adfreeunzip.domain.ExtractionSummary
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -71,12 +73,23 @@ sealed interface FolderOpening {
 
 class UnzipViewModel(
     private val repository: ArchiveRepository,
+    private val runner: ExtractionRunner,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<UnzipUiState>(UnzipUiState.NoArchive)
     val uiState: StateFlow<UnzipUiState> = _uiState.asStateFlow()
 
     private var loadJob: Job? = null
-    private var extractJob: Job? = null
+
+    init {
+        viewModelScope.launch {
+            runner.statuses.collect { statuses ->
+                _uiState.update { state ->
+                    if (state !is UnzipUiState.Browsing) return@update state
+                    state.copy(extraction = extractionFor(statuses[state.archiveUri], state.extraction))
+                }
+            }
+        }
+    }
 
     fun onArchiveSelected(archiveUri: String) {
         loadJob?.cancel()
@@ -86,7 +99,11 @@ class UnzipViewModel(
                 val name = repository.displayName(archiveUri)
                 _uiState.value =
                     when (val result = repository.list(archiveUri)) {
-                        is ArchiveResult.Success -> UnzipUiState.Browsing(archiveUri, name, result.value)
+                        is ArchiveResult.Success -> {
+                            // Shows an extraction of this archive that is still running or ended earlier.
+                            val extraction = extractionFor(runner.statuses.value[archiveUri], Extraction.NotStarted)
+                            UnzipUiState.Browsing(archiveUri, name, result.value, extraction)
+                        }
                         is ArchiveResult.Failure -> UnzipUiState.OpenFailed(result.error)
                     }
             }
@@ -94,27 +111,12 @@ class UnzipViewModel(
 
     fun onDestinationSelected(destinationTreeUri: String) {
         val browsing = _uiState.value as? UnzipUiState.Browsing ?: return
-        if (browsing.extraction is Extraction.InProgress) return
-        val archiveUri = browsing.archiveUri
-        val total = browsing.entries.size
-        setExtraction(archiveUri, Extraction.InProgress(0, total))
-        extractJob =
-            viewModelScope.launch {
-                val result = repository.extract(archiveUri, destinationTreeUri) { setProgress(archiveUri, it, total) }
-                val extraction =
-                    when (result) {
-                        is ArchiveResult.Success -> Extraction.Done(result.value, destinationTreeUri)
-                        is ArchiveResult.Failure -> Extraction.Failed(result.error)
-                    }
-                setExtraction(archiveUri, extraction)
-            }
+        runner.start(browsing.archiveUri, browsing.archiveName, destinationTreeUri, browsing.entries.size)
     }
 
     fun onCancelExtraction() {
         val browsing = _uiState.value as? UnzipUiState.Browsing ?: return
-        if (browsing.extraction !is Extraction.InProgress) return
-        extractJob?.cancel()
-        setExtraction(browsing.archiveUri, Extraction.Cancelled)
+        runner.cancel(browsing.archiveUri)
     }
 
     /** "Open folder" tapped after extracting; the route performs the request. */
@@ -137,47 +139,42 @@ class UnzipViewModel(
         }
     }
 
-    /** Called from the extraction thread; ignored once extraction was cancelled or the archive changed. */
-    private fun setProgress(
-        archiveUri: String,
-        entriesWritten: Int,
-        totalEntries: Int,
-    ) {
-        _uiState.update { state ->
-            if (state is UnzipUiState.Browsing &&
-                state.archiveUri == archiveUri &&
-                state.extraction is Extraction.InProgress
-            ) {
-                state.copy(extraction = Extraction.InProgress(entriesWritten, totalEntries))
-            } else {
-                state
-            }
+    /**
+     * Maps the runner's status to what the screen shows. The folder opens by itself only for an
+     * extraction this screen watched finish, not for one that ended while the archive was closed.
+     */
+    private fun extractionFor(
+        status: ExtractionStatus?,
+        current: Extraction,
+    ): Extraction =
+        when (status) {
+            null -> Extraction.NotStarted
+            is ExtractionStatus.Running -> Extraction.InProgress(status.entriesWritten, status.totalEntries)
+            is ExtractionStatus.Cancelled -> Extraction.Cancelled
+            is ExtractionStatus.Finished ->
+                when (val result = status.result) {
+                    is ArchiveResult.Failure -> Extraction.Failed(result.error)
+                    is ArchiveResult.Success ->
+                        current as? Extraction.Done
+                            ?: done(result.value, status.folderUri, current)
+                }
         }
-    }
 
-    /** Ignored if the user has since closed or switched archives. */
-    private fun setExtraction(
-        archiveUri: String,
-        extraction: Extraction,
-    ) {
-        _uiState.update { state ->
-            if (state is UnzipUiState.Browsing &&
-                state.archiveUri == archiveUri
-            ) {
-                state.copy(extraction = extraction)
-            } else {
-                state
-            }
-        }
+    private fun done(
+        summary: ExtractionSummary,
+        folderUri: String,
+        previous: Extraction,
+    ): Extraction.Done {
+        val watchedItFinish = previous is Extraction.InProgress
+        return Extraction.Done(summary, folderUri, if (watchedItFinish) FolderOpening.Requested else FolderOpening.Idle)
     }
 
     companion object {
         val Factory =
             viewModelFactory {
                 initializer {
-                    UnzipViewModel(
-                        ContentArchiveRepository(checkNotNull(this[APPLICATION_KEY]).contentResolver),
-                    )
+                    val app = checkNotNull(this[APPLICATION_KEY]) as UnzipApplication
+                    UnzipViewModel(app.archiveRepository, app.extractionRunner)
                 }
             }
     }
