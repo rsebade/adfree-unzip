@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Agent App</string>
+    <string name="app_name">Unzip</string>
     <string name="home_greeting">Hello, %1$s!</string>
     <string name="home_increment">Tap me</string>
     <plurals name="home_count">

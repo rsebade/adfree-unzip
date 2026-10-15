@@ -20,5 +20,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "AgentAndroidApp"
+rootProject.name = "Unzip"
 include(":app")

@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.app"
+    namespace = "com.rsebade.adfreeunzip"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.example.app"
+        applicationId = "com.rsebade.adfreeunzip"
         minSdk = 26
         targetSdk = 35
         versionCode = 1

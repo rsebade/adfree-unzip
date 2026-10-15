@@ -1,4 +1,4 @@
-package com.example.app.ui.home
+package com.rsebade.adfreeunzip.ui.home
 
 import org.junit.Assert.assertEquals
 import org.junit.Test

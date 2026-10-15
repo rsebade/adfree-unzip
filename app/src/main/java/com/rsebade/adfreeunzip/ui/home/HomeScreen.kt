@@ -1,4 +1,4 @@
-package com.example.app.ui.home
+package com.rsebade.adfreeunzip.ui.home
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -19,8 +19,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.app.R
-import com.example.app.ui.theme.AppTheme
+import com.rsebade.adfreeunzip.R
+import com.rsebade.adfreeunzip.ui.theme.AppTheme
 
 /** Stateful entry point: wires the ViewModel to the stateless [HomeScreen]. */
 @Composable

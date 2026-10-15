@@ -1,29 +1,9 @@
-# claude-android-scaffold
+# Unzip
 
 An Android app set up for **agent-driven development** (e.g. Claude Code
 on the web/mobile). You describe work from your phone; an agent implements it, proves
 it with `./scripts/verify.sh` + CI, and opens a PR with an installable APK.
 
-<!-- template-only:start -->
-> **This repository is a template.** Don't build an app here. Create a new repo from it.
-
-## Start a new app
-
-1. On this repo's GitHub page, tap **Use this template → Create a new repository**.
-2. In Claude Code, set up a cloud environment for the new repo whose network access allows
-   the hosts listed under [Cloud environment requirements](#cloud-environment-requirements).
-3. Start a session on the new repo and ask:
-   *"Initialize this project as `com.yourname.yourapp` called "Your App", then open a PR."*
-   The agent runs `./scripts/init-project.sh`, which renames the package and app and removes
-   the template-only files and sections (like this one). You can also run it yourself.
-4. Merge that PR, then start describing features.
-
-## Changing the template
-
-Only make changes here that every new app should start with: toolchain, CI, agent rules,
-scripts, or the `ui/home/` reference feature. The `Template` workflow runs
-`init-project.sh` on every push and builds the result, so the setup step can't silently break.
-<!-- template-only:end -->
 
 - **Agent rules:** [`agents/CLAUDE.md`](agents/CLAUDE.md) (auto-loaded via root `CLAUDE.md`)
 - **Stack decision:** [`docs/adr/0001-tech-stack.md`](docs/adr/0001-tech-stack.md)
