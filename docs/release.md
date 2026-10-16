@@ -20,11 +20,14 @@ keytool -genkeypair -v \
 
 It asks for a keystore password and a key password. You can use the same one for both.
 
-Then produce the base64 text for the secret:
+Then produce the base64 text for the secret (works on macOS, Linux and Termux):
 
 ```sh
-base64 -w0 unzip-upload.jks > unzip-upload.jks.b64   # macOS: base64 -i unzip-upload.jks -o unzip-upload.jks.b64
+base64 < unzip-upload.jks | tr -d '\n' > unzip-upload.jks.b64
 ```
+
+On a Mac you can instead copy it straight to the clipboard and paste it into the secret:
+`base64 < unzip-upload.jks | tr -d '\n' | pbcopy`
 
 ## One-time setup: add the GitHub secrets
 
