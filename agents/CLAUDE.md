@@ -84,8 +84,12 @@ Feature pattern (see `ui/unzip/` as the reference implementation):
 4. Run `./gradlew ktlintFormat` before committing.
 5. Commit with Conventional Commits: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`,
    `build:`, `ci:`, `chore:`. Subject ≤ 72 chars, imperative mood.
-6. Push to your working branch; open a PR using `.github/pull_request_template.md`.
-7. Watch CI. If red, root-cause and fix — "flaky" is not a root cause.
+6. Bump the version in `app/build.gradle.kts` in every PR that changes the app, so the
+   APK the human installs has a new name and Android installs it as an update:
+   `versionCode` +1, and `versionName` by semver — `fix:` → patch (0.1.0 → 0.1.1),
+   `feat:` → minor (0.1.1 → 0.2.0). If `main` moved on, re-bump from its version.
+7. Push to your working branch; open a PR using `.github/pull_request_template.md`.
+8. Watch CI. If red, root-cause and fix — "flaky" is not a root cause.
 
 ## 7. Commands
 
@@ -109,7 +113,7 @@ Feature pattern (see `ui/unzip/` as the reference implementation):
   `gradle/init/maven-central-mirror.init.gradle.kts` into `~/.gradle/init.d/`, which makes
   Gradle use Google's Maven Central mirror first (needs `maven-central.storage-download.googleapis.com`).
   If you still see 429s, check that file is installed before blaming the build.
-- The human tests on a real phone by downloading the `Unzip-<version>` APK artifact (e.g. `Unzip-0.1.0`) from
+- The human tests on a real phone by downloading the `Unzip-<version>` APK artifact (e.g. `Unzip-0.1.1`) from
   the CI run on the PR. Mention in the PR what they should tap through to verify.
 - The `Compose UI tests (emulator)` CI job runs on every push after `verify` passes. Check
   its result on your commit before claiming UI tests passed; you can't run them locally.
