@@ -12,14 +12,28 @@ android {
         applicationId = "com.rsebade.adfreeunzip"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.1.1"
+        versionCode = 3
+        versionName = "0.1.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // Play upload key, supplied only by CI from GitHub Actions secrets (see docs/release.md).
+    // Without it, bundleRelease still builds (catching R8 problems) but the bundle is unsigned.
+    val uploadKeystore = System.getenv("UNZIP_UPLOAD_KEYSTORE")?.let(::file)?.takeIf { it.exists() }
+    val uploadSigning =
+        uploadKeystore?.let { keystore ->
+            signingConfigs.create("upload") {
+                storeFile = keystore
+                storePassword = System.getenv("UNZIP_UPLOAD_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("UNZIP_UPLOAD_KEY_ALIAS")
+                keyPassword = System.getenv("UNZIP_UPLOAD_KEY_PASSWORD")
+            }
+        }
+
     buildTypes {
         release {
+            signingConfig = uploadSigning
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -64,6 +78,17 @@ tasks.register<Copy>("distDebugApk") {
     from(layout.buildDirectory.dir("outputs/apk/debug")) {
         include("*.apk")
         rename(".*\\.apk", distApkName)
+    }
+    into(layout.buildDirectory.dir("dist"))
+}
+
+// The bundle uploaded to Google Play, named for the version: build/dist/Unzip-<versionName>.aab.
+val distBundleName = "Unzip-${android.defaultConfig.versionName}.aab"
+tasks.register<Copy>("distReleaseBundle") {
+    dependsOn("bundleRelease")
+    from(layout.buildDirectory.dir("outputs/bundle/release")) {
+        include("*.aab")
+        rename(".*\\.aab", distBundleName)
     }
     into(layout.buildDirectory.dir("dist"))
 }
