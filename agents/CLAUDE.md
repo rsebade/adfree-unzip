@@ -101,6 +101,7 @@ Feature pattern (see `ui/unzip/` as the reference implementation):
 | Style check / auto-fix | `./gradlew ktlintCheck` / `./gradlew ktlintFormat` |
 | Build debug APK | `./gradlew assembleDebug` → `app/build/outputs/apk/debug/` |
 | Instrumented tests (needs device/emulator) | `./gradlew connectedDebugAndroidTest` |
+| Version bumped vs `main` (CI job `Version bumped`) | `./scripts/check-version-bump.sh` |
 | One-time SDK setup (cloud/Linux) | `./scripts/setup-android-sdk.sh` |
 
 ## 8. Environment notes for cloud / phone-driven sessions
