@@ -1,10 +1,16 @@
 package com.rsebade.adfreeunzip.ui.unzip
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.requiredWidth
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.assertWidthIsEqualTo
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.rsebade.adfreeunzip.domain.ArchiveEntry
 import com.rsebade.adfreeunzip.domain.ExtractionSummary
@@ -95,6 +101,30 @@ class UnzipScreenTest {
         setScreen(browsing.copy(extraction = done))
 
         composeRule.onNodeWithTag(UnzipTestTags.OPEN_FOLDER_UNAVAILABLE).assertExists()
+    }
+
+    @Test
+    fun onAWideScreenTheContentWidthIsCapped() {
+        setScreenOfWidth(1000.dp)
+
+        composeRule.onNodeWithTag(UnzipTestTags.ENTRIES).assertWidthIsEqualTo(MaxContentWidth)
+    }
+
+    @Test
+    fun onAPhoneTheContentFillsTheWidth() {
+        setScreenOfWidth(360.dp)
+
+        composeRule.onNodeWithTag(UnzipTestTags.ENTRIES).assertWidthIsEqualTo(360.dp)
+    }
+
+    private fun setScreenOfWidth(width: Dp) {
+        composeRule.setContent {
+            AppTheme {
+                Box(Modifier.requiredWidth(width)) {
+                    UnzipScreen(browsing, {}, {}, onCloseArchive = {}, onOpenFolder = {}, onCancelExtraction = {})
+                }
+            }
+        }
     }
 
     private fun setScreen(

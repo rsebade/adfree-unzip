@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -34,6 +36,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -44,6 +47,9 @@ import com.rsebade.adfreeunzip.domain.ArchiveEntry
 import com.rsebade.adfreeunzip.domain.ArchiveError
 import com.rsebade.adfreeunzip.domain.ExtractionSummary
 import com.rsebade.adfreeunzip.ui.theme.AppTheme
+
+/** Wider than this (tablets, desktop windows), the content stays this wide and is centred. */
+val MaxContentWidth = 600.dp
 
 private val ZIP_MIME_TYPES = arrayOf("application/zip", "application/x-zip-compressed", "application/x-zip")
 
@@ -108,7 +114,13 @@ fun UnzipScreen(
     modifier: Modifier = Modifier,
 ) {
     Scaffold(modifier = modifier.fillMaxSize()) { innerPadding ->
-        val content = Modifier.fillMaxSize().padding(innerPadding)
+        val content =
+            Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .wrapContentWidth()
+                .widthIn(max = MaxContentWidth)
+                .fillMaxWidth()
         when (uiState) {
             UnzipUiState.NoArchive -> Message(stringResource(R.string.unzip_empty), onChooseArchive, content)
             UnzipUiState.Loading ->
@@ -267,6 +279,7 @@ object UnzipTestTags {
 }
 
 @Preview(showBackground = true)
+@Preview(name = "Tablet", showBackground = true, device = Devices.TABLET)
 @Composable
 private fun UnzipScreenPreview() {
     AppTheme {
