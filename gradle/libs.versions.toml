@@ -1,7 +1,7 @@
 # Single source of truth for every dependency and plugin version.
 # Agents: add/upgrade dependencies HERE only, never inline in build files.
 [versions]
-agp = "9.4.1"
+agp = "9.5.0"
 kotlin = "2.4.21"
 ktlint-gradle = "14.2.0"
 core-ktx = "1.19.1"
